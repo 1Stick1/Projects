@@ -1,6 +1,8 @@
 import random
 import time
+import os
 
+quantity_fights = 0
 class Hero():
     def __init__(self, name, health, damage):
         self.name = name
@@ -9,29 +11,39 @@ class Hero():
         self.inventory = {'Heal': 2,}
 
     def attack(self, other):
+        
+        
         critical = random.randint(self.damage - 4, self.damage + 4)
         time.sleep(2)
         print(f'{self.name} attacks {other.name}')
 
         if critical < self.damage:
-            print(f'Attack!! {self.name} slipped. -{critical}')
+            message = f'Attack!! {self.name} slipped. -{critical}'
+            print(message)
         else:
-            print(f'Attack!! {self.name} make critical damage. -{critical}')
+            message = f'Attack!! {self.name} make critical damage. -{critical}'
+            print(message)
+        write_to_file(message)
         other.take_damage(critical)
 
     def take_damage(self, amount):
         self.health -= amount
         if self.health < 0:
-            print(f'{self.name} dead.')
+            message = f'{self.name} dead.'
+            write_to_file(message)
+            print(message)
             self.health = 0
 
     def heal(self):
         if(self.inventory['Heal'] > 0):
             self.health += 20
             self.inventory['Heal'] -= 1
-            print(f'{self.name} is using heal. +20hp')
+            message = f'{self.name} is using heal. +20hp'
+            print(message)
         else:
-            print(f'{self.name} haven\'t heal anymore')
+            message = f'{self.name} haven\'t heal anymore'
+            print(message)
+        write_to_file(message)
     def is_alive(self):
         return self.health > 0
 
@@ -88,62 +100,99 @@ class Rogue(Hero):
     def take_damage(self, amount):
         if random.random() < 0.25:
             amount = 0
-            print(f"{self.name} dodged the attack")
+            print(f"{self.name} dodged the attack!")
         super().take_damage(amount)
+temp = 0
+def enemy_turn(enemy, player):
+    action = random.randrange(1,4)
+    global temp
+    print('\n')
+    if action == 1 or action == 2:
+        enemy.attack(player)
+    elif action == 3 and temp <= 3:
+        temp += 1
+        enemy.heal()
+    print('\n\n')
+    print(player)
+    print(enemy)
 
-class Player():
-    def __init__(self, player):
-        self.player = player
-    def turn(self, enemy):
+def player_turn(player, enemy):
         action = input('Enter action:\n1. Attack\n2. Heal\n3. Skip\n')
         print('\n')
-        
         if action == '1':
-            self.player.attack(enemy)
+            player.attack(enemy)
         elif action == '2':
-            self.player.heal()
+            player.heal()
         elif action == '3':
             pass
         print('\n\n')
         print(enemy)
-        print(self.player)
-class Enemy():
-    def __init__(self, enemy):
-        self.enemy = enemy
-    def turn(self, player):
-        action = random.randrange(1,3)
-        print('\n')
-        if action == 1:
-            self.enemy.attack(player)
-        elif action == 2:
-            self.enemy.heal()
-        print('\n\n')
         print(player)
-        print(self.enemy)
-    
+   
 def fight(player, enemy):
-    print(f"\n\n\n\tFight is starting! {player.name} vs {enemy.name}\n")
+    os.makedirs('fights-log', exist_ok=True)
+    os.chdir('./fights-log')
+    global quantity_fights 
+    quantity_fights += 1
+    
+    os.system('cls||clear')
+    print(f"\n\n\n\tFight is starting! \n\n\t{player.name}(You) vs {enemy.name}\n")
     print(player)
     print(enemy)
     print('\n')
+    round_number = 0
     while player.is_alive() and enemy.is_alive():
+        round_number += 1
+        print("Round", round_number)
         if player.is_alive():
-            player1.turn(enemy)
+            player_turn(player, enemy)
             time.sleep(4)
 
         print('\n')
 
         if enemy.is_alive():
-            enemy1.turn(player)
+            enemy_turn(enemy, player)
             time.sleep(4)
     if player.health == 0:
         print(f'{enemy.name} win!!')
     else:
         print(f'{player.name} win!!')
 
-mage = Mage('Mage')
-warrior = Warrior('Warrior')
-player1 = Player(warrior)
-enemy1 = Enemy(mage)
-fight(warrior, mage)
-print(mage)
+def print_heros():
+    print("1. Mage (70hp, 20 attack, 100 mana, 50 attack with mana)")
+    print("2. Warrior (110hp, 25 attack, has 30% chance to block 10 points of damage)")
+    print("3. Rogue (90hp, 35 attack, has chance 25% to dodge the attack)")
+
+def menu(nickname):
+    print("Pick your hero: ")
+    print_heros()
+    a = input()
+    if a == '1':
+        player = Mage(nickname)
+    elif a == '2':
+        player = Warrior(nickname)
+    elif a == '3':
+        player = Rogue(nickname)
+
+    print("Now choose your enemy: ")
+    print_heros()
+    a = input()
+    
+    if a == '1':
+        enemy = Mage('Mage(enemy)')
+    if a == '2':
+        enemy = Warrior('Warrios(enemy)')
+    if a == '3':
+        enemy = Rogue('Rogue(enemy)')
+    
+    fight(player, enemy)
+    
+def write_to_file(message):
+    with open(f'fight-{quantity_fights}', 'a') as fight_log:
+        fight_log.write(message + '\n')
+
+print("Game 1v1")
+nickname = input("Enter your nickname: ")
+
+while True:
+    menu(nickname)
