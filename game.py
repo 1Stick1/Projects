@@ -11,8 +11,6 @@ class Hero():
         self.inventory = {'Heal': 2,}
 
     def attack(self, other):
-        
-        
         critical = random.randint(self.damage - 4, self.damage + 4)
         time.sleep(2)
         print(f'{self.name} attacks {other.name}')
@@ -34,20 +32,30 @@ class Hero():
             print(message)
             self.health = 0
 
+    def show_inventory(self):
+        for key in self.inventory.keys(): 
+            print(f'{key}: {self.inventory[key]}')
+        print('\n')
+    
+    
     def heal(self):
         if(self.inventory['Heal'] > 0):
             self.health += 20
             self.inventory['Heal'] -= 1
             message = f'{self.name} is using heal. +20hp'
             print(message)
+            write_to_file(message)
+            return True
         else:
             message = f'{self.name} haven\'t heal anymore'
             print(message)
-        write_to_file(message)
+            write_to_file(message)
+            return False
     def is_alive(self):
         return self.health > 0
 
     def __str__(self):
+        write_to_file(f'{self.name} health: {self.health}\n')
         return f'{self.name} health: {self.health}'
 
 class Mage(Hero):
@@ -61,27 +69,35 @@ class Mage(Hero):
         critical = base_critical
         time.sleep(2)
     
-        print(f'{self.name} attacks {other.name}')
-
         if self.mana >= 40:
             self.mana -= 40
             critical += 30
-            print(f'{self.name} attacks with magical damage {other.name}')
+            message = f'{self.name} attacks with magical damage {other.name}'
+            print(message)
         else:
-            print(f'{self.name} attacks with common damage. Not enough mana')
-
+            message = f'{self.name} attacks with common damage. Not enough mana'
+            print(message)
+            write_to_file(message)
+            
         if base_critical < self.damage:
-            print(f'Attack!! {self.name} slipped. -{critical}')
+            message = f'Attack!! {self.name} slipped. -{critical}'
+            print(message)
+            write_to_file(message)
         elif base_critical > self.damage:
-            print(f'Attack!! {self.name} make critical damage. -{critical}')
+            message = f'Attack!! {self.name} make critical damage. -{critical}'
+            print(message)
+            write_to_file(message)
         else:
-            print(f"Attack!! -{critical}")      
+            message = f"Attack!! -{critical}"
+            print(message)  
+            write_to_file(message)    
         other.take_damage(critical)
         
     
     def __str__(self):
+        write_to_file(f'Mana: {self.mana}')
         return f'{super().__str__()}, Mana: {self.mana}'
-    
+     
 class Warrior(Hero):
     def __init__(self, name):
         super().__init__(name, health = 110, damage = 25)
@@ -89,7 +105,9 @@ class Warrior(Hero):
     def take_damage(self, amount):
         if random.random() < 0.3:
             amount -= 10
-            print(f'{self.name} blocks 10 damage!')
+            message = f'{self.name} blocks 10 damage!'
+            print(message)
+            write_to_file(message)
         amount = max(0, amount)
         super().take_damage(amount)
 
@@ -100,34 +118,41 @@ class Rogue(Hero):
     def take_damage(self, amount):
         if random.random() < 0.25:
             amount = 0
-            print(f"{self.name} dodged the attack!")
+            message = f"{self.name} dodged the attack!"
+            print(message)
         super().take_damage(amount)
-temp = 0
+
+
+
 def enemy_turn(enemy, player):
     action = random.randrange(1,4)
-    global temp
     print('\n')
     if action == 1 or action == 2:
         enemy.attack(player)
-    elif action == 3 and temp <= 3:
-        temp += 1
+    elif action == 3 and enemy.inventory['Heal']:
         enemy.heal()
     print('\n\n')
     print(player)
     print(enemy)
 
 def player_turn(player, enemy):
-        action = input('Enter action:\n1. Attack\n2. Heal\n3. Skip\n')
+    while True:
+        action = input('Enter action:\n1. Attack\n2. Heal\n3. Inventory\n4. Skip\n')
         print('\n')
         if action == '1':
             player.attack(enemy)
         elif action == '2':
-            player.heal()
+            if not player.heal():
+                continue
         elif action == '3':
+            player.show_inventory()
+            continue
+        elif action == '4':
             pass
         print('\n\n')
         print(enemy)
         print(player)
+        break
    
 def fight(player, enemy):
     os.makedirs('fights-log', exist_ok=True)
@@ -144,6 +169,7 @@ def fight(player, enemy):
     while player.is_alive() and enemy.is_alive():
         round_number += 1
         print("Round", round_number)
+        write_to_file(f'Round {round_number}')
         if player.is_alive():
             player_turn(player, enemy)
             time.sleep(4)
@@ -154,9 +180,14 @@ def fight(player, enemy):
             enemy_turn(enemy, player)
             time.sleep(4)
     if player.health == 0:
-        print(f'{enemy.name} win!!')
+        message = f'{enemy.name} win!!'
+        print(message)
+        write_to_file(message)
     else:
-        print(f'{player.name} win!!')
+        message = f'{player.name} win!!'
+        print(message)
+        write_to_file(message)
+    os.chdir('../')
 
 def print_heros():
     print("1. Mage (70hp, 20 attack, 100 mana, 50 attack with mana)")
@@ -188,7 +219,8 @@ def menu(nickname):
     fight(player, enemy)
     
 def write_to_file(message):
-    with open(f'fight-{quantity_fights}', 'a') as fight_log:
+    global nickname
+    with open(f'fight-{nickname}{quantity_fights}', 'a') as fight_log:
         fight_log.write(message + '\n')
 
 print("Game 1v1")
